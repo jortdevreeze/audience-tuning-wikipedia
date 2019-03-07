@@ -8,12 +8,6 @@ Created on Wed Mar  6 11:27:40 2019
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from tqdm import tqdm
-
-import pandas as pd
-import os
-
-from config import similarity
 
 def getCosineSimilarity(*strs, method='tfidf'):
     if method is 'tfidf':
