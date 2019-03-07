@@ -146,7 +146,7 @@ if __name__ == "__main__":
         # determine size of previous edit
         if type(row[common.previousEdit]) is str:
             
-            previous_size = len(row[images.previousEdit])
+            previous_size = len(row[common.previousEdit])
             
             if previous_size <= split3:
                 size = 'small' 
