@@ -38,13 +38,4 @@ def getTfidfVectors(*strs):
 Execute the main text comparison process.
 """
 if __name__ == "__main__":    
-        
-    tokens = [
-        df['CurrentEdit'][68],
-        df['PreviousEdit'][68],
-        df['CurrentEdit'][358],
-        df['PreviousEdit'][358]
-    ]
-    
-    print(getCosineSimilarity(tokens[0], tokens[1], method='tf')[0,1])
-    print(getCosineSimilarity(tokens[0], tokens[1], method='tfidf')[0,1])
+    pass
