@@ -11,7 +11,7 @@ from tqdm import tqdm
 import pandas as pd
 import os
 
-from config import images
+from config import common, images
 
 def getTextDimensions(text, font):     
     width = 0    
@@ -51,7 +51,7 @@ def convertImage(text):
 
     for line in lines:
         
-        # The edit starts and ends on this line
+        # The edit is starts and ends on this line
         if line.find('<b>') is not -1 and line.find('</b>') is not -1:
             
             parts = line.split('<b>')
@@ -103,17 +103,17 @@ Execute the main conversion process.
 """
 if __name__ == "__main__":    
         
-    os.chdir(images.pathName)
+    os.chdir(common.pathName)
     
-    df = pd.read_csv(images.fileName, sep=';', encoding='utf-8')
+    df = pd.read_csv(common.fileName, sep=';', encoding='utf-8')
     
-    split1 = df[images.currentEdit].str.len().quantile(.33)
-    split2 = df[images.currentEdit].str.len().quantile(.66)
+    split1 = df[common.currentEdit].str.len().quantile(.33)
+    split2 = df[common.currentEdit].str.len().quantile(.66)
     
-    split3 = df[images.previousEdit].str.len().quantile(.33)
-    split4 = df[images.previousEdit].str.len().quantile(.66)
+    split3 = df[common.previousEdit].str.len().quantile(.33)
+    split4 = df[common.previousEdit].str.len().quantile(.66)
 
-    languages = pd.Series([1] * df[images.languageCode].describe()['unique'], index=df[images.languageCode].unique())
+    languages = pd.Series([1] * df[common.languageCode].describe()['unique'], index=df[common.languageCode].unique())
     
     # Create path if it not exists
     if not os.path.exists(images.exportPath):
@@ -125,12 +125,12 @@ if __name__ == "__main__":
 
     for index, row in tqdm(df.iterrows(), total=df.shape[0]):
        
-        i = languages[row[images.languageCode]]
+        i = languages[row[common.languageCode]]
         
         # determine size of current edit
-        if type(row[images.currentEdit]) is str:
+        if type(row[common.currentEdit]) is str:
             
-            current_size = len(row[images.currentEdit])
+            current_size = len(row[common.currentEdit])
                         
             if current_size <= split1:
                 size = 'small' 
@@ -140,11 +140,11 @@ if __name__ == "__main__":
                 size = 'large'
             
             # Convert the text to an image
-            img = convertImage(row[images.currentEdit])         
-            img.save('{}/{}/{:03d}_{}_current_{}.png'.format(images.exportPath, row[images.languageCode], i, size, row[images.editId]))
+            img = convertImage(row[common.currentEdit])         
+            img.save('{}/{}/{:03d}_{}_current_{}.png'.format(images.exportPath, row[common.languageCode], i, size, row[common.editId]))
         
         # determine size of previous edit
-        if type(row[images.previousEdit]) is str:
+        if type(row[common.previousEdit]) is str:
             
             previous_size = len(row[images.previousEdit])
             
@@ -156,8 +156,8 @@ if __name__ == "__main__":
                 size = 'large'
             
             # Convert the text to an image
-            img = convertImage(row[images.previousEdit])         
-            img.save('{}/{}/{:03d}_{}_previous_{}.png'.format(images.exportPath, row[images.languageCode], i, size, row[images.editId]))
+            img = convertImage(row[common.previousEdit])         
+            img.save('{}/{}/{:03d}_{}_previous_{}.png'.format(images.exportPath, row[common.languageCode], i, size, row[common.editId]))
                
-        languages[row[images.languageCode]] += 1
+        languages[row[common.languageCode]] += 1
         
