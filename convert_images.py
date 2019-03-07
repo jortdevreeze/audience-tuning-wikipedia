@@ -51,7 +51,7 @@ def convertImage(text):
 
     for line in lines:
         
-        # The edit is starts and ends on this line
+        # The edit starts and ends on this line
         if line.find('<b>') is not -1 and line.find('</b>') is not -1:
             
             parts = line.split('<b>')
