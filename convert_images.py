@@ -29,7 +29,7 @@ def convertImage(text):
     line_height = images.fontSize
     
     # Determine the line width for the specified font size
-    line_width = int(600 / (getTextDimensions(text, font_regular) / len(text)))
+    line_width = int((images.imageWidth - 50) / (getTextDimensions(text, font_regular) / len(text)))
     
     # Add space between the lines
     padding = int(images.fontSize / 2)
@@ -39,7 +39,7 @@ def convertImage(text):
     
     # Calculate image height
     image_height = line_height + ((len(lines) + 1) * (line_height + padding)) + line_height
-    image_width = 650
+    image_width = images.imageWidth
 
     # Create an empty image
     img = Image.new('RGB', (image_width, image_height), (255, 255, 255))
