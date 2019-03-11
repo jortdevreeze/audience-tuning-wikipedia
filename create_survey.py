@@ -22,7 +22,7 @@ def createQuestions(row, edit):
     # The translation of the article
     questions.append('[[Question:TE:Essay]]\n')
     questions.append('[[ID:translation_{}_{}]]\n'.format(edit, row[common.editId]))
-    questions.append('Please translate the text above and write down the translation in this text box.\n')
+    questions.append('Please translate the text above and write down the translation in this text-box.\n')
     questions.append('\n')
     
     # The translation of the actual edit displayed in bold
