@@ -34,7 +34,7 @@ def createQuestions(row, edit):
     # Ask quetions about bias
     questions.append('[[Question:MC:SingleAnswer:Horizontal]]\n')
     questions.append('[[ID:prefer_{}_{}]]\n'.format(edit, row[common.editId]))
-    questions.append('When comparing both parties directly, do you get the impression that the text highlighted in bold prefers one of the two parties?\n')
+    questions.append('When comparing both parties described in the text directly, do you get the impression that the text highlighted in bold prefers one of the two parties?\n')
     questions.append('[[Choices]]\n')
     
     questions.append('{}\n'.format(nation1))
@@ -45,13 +45,12 @@ def createQuestions(row, edit):
     questions.append('6\n')
     questions.append('7\n')
     questions.append('8\n')
-    questions.append('9\n')
     questions.append('{}\n'.format(nation2))
     questions.append('\n')
     
     questions.append('[[Question:MC:SingleAnswer:Horizontal]]\n')
     questions.append('[[ID:perspective_{}_{}]]\n'.format(edit, row[common.editId]))
-    questions.append('Do you have the impression that one of the two parties or its perspective is neglected (i.e., not sufficiently elaborated on) in this text?\n')
+    questions.append('Do you have the impression that the perspective of one of the two parties is neglected (i.e., not sufficiently elaborated on) in this text highlighted in bold?\n')
     questions.append('[[Choices]]\n')
     
     questions.append('perspective of {} is neglected\n'.format(nation1))
@@ -62,7 +61,6 @@ def createQuestions(row, edit):
     questions.append('6\n')
     questions.append('7\n')
     questions.append('8\n')
-    questions.append('9\n')
     questions.append('perspective of {} is neglected\n'.format(nation2))
     questions.append('\n')    
                 
@@ -92,8 +90,6 @@ def createQuestions(row, edit):
     questions.append('[[Answer]]\n')
     questions.append('8\n')
     questions.append('[[Answer]]\n')
-    questions.append('9\n')
-    questions.append('[[Answer]]\n')
     questions.append('very positively\n')
     questions.append('\n')   
 
@@ -107,7 +103,7 @@ def createQuestions(row, edit):
     
     questions.append('[[AdvancedAnswers]]\n')
     questions.append('[[Answer]]\n')
-    questions.append('not at all respoonsible\n')
+    questions.append('not at all responsible\n')
     questions.append('[[Answer]]\n')
     questions.append('2\n')
     questions.append('[[Answer]]\n')
@@ -122,8 +118,6 @@ def createQuestions(row, edit):
     questions.append('7\n')
     questions.append('[[Answer]]\n')
     questions.append('8\n')
-    questions.append('[[Answer]]\n')
-    questions.append('9\n')
     questions.append('[[Answer]]\n')
     questions.append('very responsible\n')
     questions.append('\n')            
@@ -218,6 +212,15 @@ if __name__ == "__main__":
         # First page assessing the direction of the article
         question.append('[[Block:Text {}]]\n'.format(row[common.editId]))
         question.append('\n')
+        
+        question.append('[[Question:DB]]\n')
+        question.append(''.join(['[[ID:decription]]\n']))
+        question.append('<p>The texts that you will translate is about a conflict between two parties (nations or groups). The text that you will be working on is about the following topic: <br /><br /></p><p><b>{}:</b> {}</p>\n'.format(
+            row[common.parentTitle], survey.descriptions[row[common.parentTitle]])
+        )
+        question.append('\n')
+        question.append('[[PageBreak]]\n')
+        question.append('\n')
                      
         # Previous Edit
         if type(row[common.previousEdit]) is str:
@@ -280,7 +283,7 @@ if __name__ == "__main__":
             question.append('6\n')
             question.append('similar perspective\n')
             question.append('\n')
-
+            
         addToSurvey(question, row[common.languageCode], stype, size)
         
         languages[row[common.languageCode]] += 1
