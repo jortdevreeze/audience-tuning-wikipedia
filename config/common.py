@@ -5,8 +5,7 @@ Created on Thu Mar  7 12:29:56 2019
 @author: jdevreeze
 """
 
-# Define paths and filenames for importing and exporting data
-pathName = ''
+# Define path and filenames for importing and exporting data
 fileName = 'data/dataset.csv'
 
 # Define variable names which are used in the dataset
