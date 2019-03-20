@@ -121,9 +121,7 @@ def createQuestions(row, edit):
     questions.append('[[Answer]]\n')
     questions.append('very responsible\n')
     questions.append('\n')            
-    
-    questions.append('[[PageBreak]]\n')
-    
+        
     return questions
 
 def addToSurvey(question, language, stype, size):
@@ -255,6 +253,8 @@ if __name__ == "__main__":
             question.extend(createQuestions(row, 'current'))            
         
         if stype is 'double':
+            
+            question.append('[[PageBreak]]\n')
             
             question.append('[[Question:MC:SingleAnswer:Horizontal]]\n')
             question.append('[[ID:similarity_{}]]\n'.format(row[common.editId]))
