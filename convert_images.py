@@ -106,12 +106,6 @@ if __name__ == "__main__":
     os.chdir(common.pathName)
     
     df = pd.read_csv(common.fileName, sep=';', encoding='utf-8')
-    
-    split1 = df[common.currentEdit].str.len().quantile(.33)
-    split2 = df[common.currentEdit].str.len().quantile(.66)
-    
-    split3 = df[common.previousEdit].str.len().quantile(.33)
-    split4 = df[common.previousEdit].str.len().quantile(.66)
 
     languages = pd.Series([1] * df[common.languageCode].describe()['unique'], index=df[common.languageCode].unique())
     
@@ -127,37 +121,19 @@ if __name__ == "__main__":
        
         i = languages[row[common.languageCode]]
         
-        # determine size of current edit
+        # dconvert the current edit
         if type(row[common.currentEdit]) is str:
-            
-            current_size = len(row[common.currentEdit])
-                        
-            if current_size <= split1:
-                size = 'small' 
-            elif current_size > split1 and current_size < split2:
-                size = 'medium'
-            elif current_size >= split2:
-                size = 'large'
             
             # Convert the text to an image
             img = convertImage(row[common.currentEdit])         
-            img.save('{}/{}/{:03d}_{}_current_{}.png'.format(images.exportPath, row[common.languageCode], i, size, row[common.editId]))
+            img.save('{}/{}/{:03d}_current_{}.png'.format(images.exportPath, row[common.languageCode], i, row[common.editId]))
         
         # determine size of previous edit
         if type(row[common.previousEdit]) is str:
             
-            previous_size = len(row[common.previousEdit])
-            
-            if previous_size <= split3:
-                size = 'small' 
-            elif previous_size > split3 and previous_size < split4:
-                size = 'medium'
-            elif previous_size >= split4:
-                size = 'large'
-            
             # Convert the text to an image
             img = convertImage(row[common.previousEdit])         
-            img.save('{}/{}/{:03d}_{}_previous_{}.png'.format(images.exportPath, row[common.languageCode], i, size, row[common.editId]))
+            img.save('{}/{}/{:03d}_previous_{}.png'.format(images.exportPath, row[common.languageCode], i, row[common.editId]))
                
         languages[row[common.languageCode]] += 1
         
