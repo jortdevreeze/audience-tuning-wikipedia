@@ -238,10 +238,10 @@ def main():
                             w1 = similarity.tokenizeAndFilter(pair[0])
                             w2 = similarity.tokenizeAndFilter(pair[1])
 
-                            if  0 in idx: a.append(similarity.getCosine(w1, w2, method='tf'))
-                            if  1 in idx: b.append(similarity.getCosine(w1, w2, method='tfidf'))
-                            if  2 in idx: c.append(similarity.getSoftCosine(w1, w2, model=model))
-                            if  3 in idx: d.append(similarity.getEmbeddingsSimilarity(w1, w2, model=model))
+                            if 0 in idx: a.append(similarity.getCosine(w1, w2, method='tf'))
+                            if 1 in idx: b.append(similarity.getCosine(w1, w2, method='tfidf'))
+                            if 2 in idx: c.append(similarity.getSoftCosine(w1, w2, model=model))
+                            if 3 in idx: d.append(similarity.getEmbeddingsSimilarity(w1, w2, model=model))
                         
                         row = {'article' : [article], 'language' : [language], 'tongue' : [t], 'factor' : 0, 'tf' : [a], 'tfidf' : [b], 'soft_cosine' : [c], 'embeddings' : [d]}
                         
@@ -280,10 +280,10 @@ def main():
                         w1 = similarity.tokenizeAndFilter(pair[0])
                         w2 = similarity.tokenizeAndFilter(pair[1])
                         
-                        if  0 in idx: a.append(similarity.getCosine(w1, w2, method='tf'))
-                        if  1 in idx: b.append(similarity.getCosine(w1, w2, method='tfidf'))
-                        if  2 in idx: c.append(similarity.getSoftCosine(w1, w2, model=model))
-                        if  3 in idx: d.append(similarity.getEmbeddingsSimilarity(w1, w2, model=model))
+                        if 0 in idx: a.append(similarity.getCosine(w1, w2, method='tf'))
+                        if 1 in idx: b.append(similarity.getCosine(w1, w2, method='tfidf'))
+                        if 2 in idx: c.append(similarity.getSoftCosine(w1, w2, model=model))
+                        if 3 in idx: d.append(similarity.getEmbeddingsSimilarity(w1, w2, model=model))
 
                     row = {'article' : [article], 'language' : [language], 'tongue' : [t], 'factor' : 1, 'tf' : [a], 'tfidf' : [b], 'soft_cosine' : [c], 'embeddings' : [d]}
 
