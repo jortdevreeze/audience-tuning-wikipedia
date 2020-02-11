@@ -12,7 +12,6 @@ import os.path
 import argparse
 
 import pandas as pd
-import numpy as np
 
 from tqdm import tqdm
 from datetime import datetime
@@ -74,7 +73,7 @@ class Similarity:
     
     def getSoftCosine(self, *strs, model):
         dictionary =  corpora.Dictionary([strs[0], strs[1]])
-        s_matrix = model.similarity_matrix(dictionary, tfidf=None, threshold=0.0, exponent=2.0, nonzero_limit=100)
+        s_matrix = model.similarity_matrix(dictionary, tfidf=None, threshold=0.0, exponent=2.0, nonzero_limit=100) # Default paramaters (see https://radimrehurek.com/gensim/models/keyedvectors.html)
         return softcossim(dictionary.doc2bow(strs[0]), dictionary.doc2bow(strs[1]), s_matrix)
     
     def getWordEmbeddings(self, words, model):
@@ -113,6 +112,13 @@ def saveOutput(df, name):
         raise ValueError('Unable to save the dataset, because it is empty.')
 
 def main():
+
+    metrics = [
+        'tf',
+        'tfidf',
+        'soft_cosine',
+        'embeddings'
+    ]
     
     parser = argparse.ArgumentParser(description='Create a dataset with text similarities.') 
     
@@ -122,6 +128,7 @@ def main():
     parser.add_argument('--blacklist', metavar='blacklist', nargs='*', type=str, default=False, help='A list with languages to exclude from the input data.')
     parser.add_argument('--whitelist', metavar='whitelist', nargs='*', type=str, default=False, help='A list with languages to include from the input data. Note that this overrides a blacklist.')
     parser.add_argument('--resume', metavar='resume', type=str, default=False, help='Continue the calculation of text similarity from the specified language.')
+    parser.add_argument('--metrics', metavar='metrics', nargs='*', type=str, default=False, help='Specify which metrics should be used.')
     
     args = parser.parse_args()
     
@@ -142,7 +149,15 @@ def main():
     df = df.sort_values('Language')
     
     output = False
-    
+
+    # Check which metrics to use
+    if args.metrics is not False:
+        idx = [metrics.index(x) for x in set(args.metrics).intersection(metrics)]
+        if len(idx) is 0:
+            raise ValueError('You must specify a valid metric to calculate similarity.')
+    else:
+        idx = list(range(4))
+
     if args.resume is not False:
         
         if os.path.isfile(args.output):
@@ -174,16 +189,18 @@ def main():
         subset = df[(df.Language == language)]
         
         # Check if we need to load the Fasttext model
-        if args.strict is True:
-            for article in subset.Series.unique():
-                flag = True if len(subset[(subset.Series == article)].Tongue.unique()) > 1 else False
-                if flag is True:
-                    break
-        else:
-            flag = True
-        
+        flag = False
+        if any(x >= 2 for x in idx):
+            if args.strict is True:
+                for article in subset.Series.unique():
+                    flag = True if len(subset[(subset.Series == article)].Tongue.unique()) > 1 else False
+                    if flag is True:
+                        break
+            else:
+                flag = True
+
         # Load the Fasttext model
-        if flag is True:
+        if flag is True:   
             model = gensim.models.fasttext.load_facebook_vectors('../models/cc.{}.300.bin.gz'.format(language))
             print('%s: Finished loading the pre-trained word vectors' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S')))
         
@@ -214,30 +231,19 @@ def main():
                     
                     if len(pairs) > 0:
                     
-                        array = np.empty((0,4))
+                        a, b, c, d = [], [], [], []
                         
                         for pair in tqdm(pairs):
                             
                             w1 = similarity.tokenizeAndFilter(pair[0])
                             w2 = similarity.tokenizeAndFilter(pair[1])
-                            
-                            array = np.concatenate((array, np.array([[
-                                similarity.getCosine(w1, w2, method='tf'),
-                                similarity.getCosine(w1, w2, method='tfidf'),
-                                similarity.getSoftCosine(w1, w2, model=model),
-                                similarity.getEmbeddingsSimilarity(w1, w2, model=model)
-                            ]])))
+
+                            if  0 in idx: a.append(similarity.getCosine(w1, w2, method='tf'))
+                            if  1 in idx: b.append(similarity.getCosine(w1, w2, method='tfidf'))
+                            if  2 in idx: c.append(similarity.getSoftCosine(w1, w2, model=model))
+                            if  3 in idx: d.append(similarity.getEmbeddingsSimilarity(w1, w2, model=model))
                         
-                        row = {
-                            'article' : [article], 
-                            'language' : [language], 
-                            'tongue' : [t], 
-                            'factor' : 0, 
-                            'tf' : [array[0:,0].tolist()], 
-                            'tfidf' : [array[0:,1].tolist()], 
-                            'soft_cosine' : [array[0:,2].tolist()], 
-                            'embeddings' : [array[0:,3].tolist()]
-                        }
+                        row = {'article' : [article], 'language' : [language], 'tongue' : [t], 'factor' : 0, 'tf' : [a], 'tfidf' : [b], 'soft_cosine' : [c], 'embeddings' : [d]}
                         
                         if output is False:
                             output = pd.DataFrame(row)
@@ -267,30 +273,19 @@ def main():
                 
                 if len(pairs) > 0:
                 
-                    array = np.empty((0,4))
-                
+                    a, b, c, d = [], [], [], []
+
                     for pair in tqdm(pairs):
                 
                         w1 = similarity.tokenizeAndFilter(pair[0])
                         w2 = similarity.tokenizeAndFilter(pair[1])
                         
-                        array = np.concatenate((array, np.array([[
-                            similarity.getCosine(w1, w2, method='tf'),
-                            similarity.getCosine(w1, w2, method='tfidf'),
-                            similarity.getSoftCosine(w1, w2, model=model),
-                            similarity.getEmbeddingsSimilarity(w1, w2, model=model)
-                        ]])))
+                        if  0 in idx: a.append(similarity.getCosine(w1, w2, method='tf'))
+                        if  1 in idx: b.append(similarity.getCosine(w1, w2, method='tfidf'))
+                        if  2 in idx: c.append(similarity.getSoftCosine(w1, w2, model=model))
+                        if  3 in idx: d.append(similarity.getEmbeddingsSimilarity(w1, w2, model=model))
 
-                    row = {
-                        'article' : [article], 
-                        'language' : [language], 
-                        'tongue' : ['%s-%s' % (tongue[0], tongue[1])], 
-                        'factor' : 1, 
-                        'tf' : [array[0:,0].tolist()], 
-                        'tfidf' : [array[0:,1].tolist()], 
-                        'soft_cosine' : [array[0:,2].tolist()], 
-                        'embeddings' : [array[0:,3].tolist()]
-                    }
+                    row = {'article' : [article], 'language' : [language], 'tongue' : [t], 'factor' : 1, 'tf' : [a], 'tfidf' : [b], 'soft_cosine' : [c], 'embeddings' : [d]}
 
                     if output is False:
                         output = pd.DataFrame(row)
