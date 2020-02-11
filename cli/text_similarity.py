@@ -128,7 +128,7 @@ def main():
     parser.add_argument('--blacklist', metavar='blacklist', nargs='*', type=str, default=False, help='A list with languages to exclude from the input data.')
     parser.add_argument('--whitelist', metavar='whitelist', nargs='*', type=str, default=False, help='A list with languages to include from the input data. Note that this overrides a blacklist.')
     parser.add_argument('--resume', metavar='resume', type=str, default=False, help='Continue the calculation of text similarity from the specified language.')
-    parser.add_argument('--metrics', metavar='metrics', nargs='*', type=str, default=False, help='Specify which metrics should be used.')
+    parser.add_argument('--metrics', metavar='metrics', nargs='*', type=str, default=False, help='Specify which metrics should be used (tf, tfidf, soft_cosine, embeddings).')
     
     args = parser.parse_args()
     
