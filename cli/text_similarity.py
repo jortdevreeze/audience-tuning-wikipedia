@@ -125,10 +125,10 @@ def main():
     parser.add_argument('--input', metavar='input', type=str, required=True, help='Opens a csv file from the specified path.')
     parser.add_argument('--output', metavar='output', type=str, required=True, help='Stores the similarity data to the specified path.')
     parser.add_argument('--strict', action='store_true', help='Specify if similarities should only be caluculted when there are 2-combinations for both nationalities.')
+    parser.add_argument('--metrics', metavar='metrics', nargs='*', type=str, default=False, help='Specify which metrics should be used (tf, tfidf, soft_cosine, embeddings).')
     parser.add_argument('--blacklist', metavar='blacklist', nargs='*', type=str, default=False, help='A list with languages to exclude from the input data.')
     parser.add_argument('--whitelist', metavar='whitelist', nargs='*', type=str, default=False, help='A list with languages to include from the input data. Note that this overrides a blacklist.')
     parser.add_argument('--resume', metavar='resume', type=str, default=False, help='Continue the calculation of text similarity from the specified language.')
-    parser.add_argument('--metrics', metavar='metrics', nargs='*', type=str, default=False, help='Specify which metrics should be used (tf, tfidf, soft_cosine, embeddings).')
     
     args = parser.parse_args()
     
