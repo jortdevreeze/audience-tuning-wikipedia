@@ -64,7 +64,7 @@ def main():
 
     print('%s: Merging the translations together with the raw data.' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S')))
     print('%s: Start iterating through %d records...' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S'), len(df)))
-    
+
     # Check if we have to override the default arguments
     if args.pattern is not False:
         pattern = args.pattern
@@ -120,6 +120,8 @@ def main():
             else:
                 edits = pd.concat([edits, edit], sort=False)
             
+
+    print('%s: Saving the merged dataset...' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S')))
 
     # Merge the datasets
     if edits is not False:        
