@@ -82,16 +82,14 @@ def main():
         data = iterateThroughData(args.path, selector)
         
         if data is not False and data.shape[1] > 0:
-
-            error = False
-
+        
             i = data.columns.get_loc(data.filter(regex=selector).columns[0])
-            n = divider[1] if row.Type is 2 else divider[0]
-
+            n = i + divider[1] if row.Type is 2 else i + divider[0]
+            
             meta = data[metadata]
             edit = data.iloc[:,i:n].dropna()
             meta = meta.loc[edit.index,:]
-
+            
             if len(edit.columns) > divider[0] and str(row.EditId) not in edit.columns[-1]:
                 error = True
                 edit = edit.iloc[:,0:divider[0]].copy()
@@ -100,20 +98,20 @@ def main():
             
             # Rename all columns in the dataset
             for idx, name in enumerate(edit.columns):
+                regex = re.findall('\d+', name)
                 prefix = '_' if '_' in name else ''            
-                replace = re.sub(prefix + str(row.EditId), '', name)
-                regex = re.findall(r'\d+', name)  
+                replace = re.sub(prefix + str(row.EditId), '', name)           
                 if len(regex) > 1:
                     if regex[0] == regex[1]:
-                        replace = re.sub(r'_\d_', '_', name)               
-                edit.rename(columns={edit.columns[idx]: replace}, inplace=True)
-
+                        replace = re.sub('_\d_', '_', name)               
+                edit.rename(columns={edit.columns[idx] : replace}, inplace=True)           
+            
             edit = pd.concat([meta, edit], axis=1)
             
             # Insert additional data
             edit.insert(0, 'EditId', row.EditId)
             edit.insert(1, 'Count', count)
-
+            
             # Create column in dataset
             if edits is False:
                 edits = edit
