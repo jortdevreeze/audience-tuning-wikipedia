@@ -15,17 +15,6 @@ import numpy as np
 from tqdm import tqdm
 from datetime import datetime
 
-metadata = [
-    'ResponseId'
-    'language',
-    'english',
-    'comment',
-    'id'
-]
-
-pattern = r'{}\w\D+{}$'
-divider = [7,19]
-
 def iterateThroughData(path, selector):    
     for filename in os.listdir(path):        
         if filename.endswith('.csv'):            
@@ -49,11 +38,22 @@ def main():
     parser.add_argument('--regex', metavar='regex', type=str, required=True, help='Defines the first column name to use as selector.')
     
     # Optional arguments which overrides the default settings
-    parser.add_argument('--pattern', metavar='pattern', type=str, required=False, help='Override the regex pattern that removes the edit id from all column names (default: "{}\w\D+{}").')
+    parser.add_argument('--pattern', metavar='pattern', type=str, default=False, help='Override the regex pattern that removes the edit id from all column names (default: "{}\w\D+{}").')
     parser.add_argument('--metadata', metavar='metadata', type=str, nargs='*', default=False, help='Override which columns contain metadata (default: ["ResponseId", "language", "english", "id"]).')
     parser.add_argument('--divider', metavar='divider', type=int, nargs=2, default=False, help='Override how to split up the columns in the dataset (default: [7,19]).')
 
     args = parser.parse_args()
+
+    metadata = [
+        'ResponseId',
+        'language',
+        'english',
+        'comment',
+        'id'
+    ]
+
+    pattern = r'{}\w\D+{}$'
+    divider = [7,19]
 
     try:
         df = pd.read_csv(args.input, sep=';', encoding='utf-8')
@@ -62,8 +62,9 @@ def main():
 
     edits = False
 
-    print('%s: Merging the translations together with the raw data...' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S')))
-
+    print('%s: Merging the translations together with the raw data.' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S')))
+    print('%s: Start iterating through %d records...' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S'), len(df)))
+    
     # Check if we have to override the default arguments
     if args.pattern is not False:
         pattern = args.pattern
@@ -113,11 +114,11 @@ def main():
             edit.insert(0, 'EditId', row.EditId)
             edit.insert(1, 'Count', count)
 
-        # Create column in dataset
-        if edits is False:
-            edits = edit
-        else:
-            edits = pd.concat([edits, edit])
+            # Create column in dataset
+            if edits is False:
+                edits = edit
+            else:
+                edits = pd.concat([edits, edit], sort=False)
             
 
     # Merge the datasets
