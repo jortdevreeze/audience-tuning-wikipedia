@@ -13,7 +13,6 @@ import pandas as pd
 import numpy as np
 
 from tqdm import tqdm
-from multiprocessing import Pool, cpu_count
 from datetime import datetime
 
 metadata = [
@@ -38,14 +37,6 @@ def iterateThroughData(path, selector):
             if len(df.filter(regex=selector).columns) is not 0:
                 return df
     return False
-
-def parallelizeDataframe(df, func, cores=4):
-    split = np.array_split(df, cores)
-    pool = Pool(cores)
-    df = pd.concat(pool.map(func, split))
-    pool.close()
-    pool.join()
-    return df
 
 def main():
     
