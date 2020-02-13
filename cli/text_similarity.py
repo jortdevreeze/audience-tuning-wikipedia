@@ -86,13 +86,6 @@ class Similarity:
         if not s1words or not s2words:
             return None
         return model.n_similarity(s1words, s2words)
-    
-    def getEmbeddingsDistance(self, *strs, model):
-        s1words = self.getWordEmbeddings(strs[0], model)
-        s2words = self.getWordEmbeddings(strs[1], model)    
-        if not s1words or not s2words:
-            return None
-        return model.wmdistance(s1words, s2words)
 
 def processDocument(doc): 
     if type(doc) is str:
