@@ -108,8 +108,8 @@ def main():
     
     parser.add_argument('--input', metavar='input', type=str, required=True, help='Opens a csv file from the specified path.')
     parser.add_argument('--path', metavar='path', type=str, required=True, help='Specify a path to save all rendered images.')
-    parser.add_argument('--font_size', metavar='font_size', type=int, default=False, help='Defines font size that should be used rendering the edits (default: 16).')
-    parser.add_argument('--seperator', metavar='seperator', type=str, nargs=2, default=False, help='Defines what separates context from the actual edit (default: ["<b>", "</b>"]).')
+    parser.add_argument('--font_size', metavar='font_size', type=int, default=None, help='Defines font size that should be used rendering the edits (default: 16).')
+    parser.add_argument('--seperator', metavar='seperator', type=str, nargs=2, default=None, help='Defines what separates context from the actual edit (default: ["<b>", "</b>"]).')
 
     args = parser.parse_args()
 
@@ -118,8 +118,8 @@ def main():
     except:
         raise ValueError('Can not open the specified dataset.')
 
-    font_size = args.font_size if args.font_size is not False else 16
-    seperator = args.seperator if args.seperator is not False else ['<b>', '</b>']
+    font_size = args.font_size if args.font_size is not None else 16
+    seperator = args.seperator if args.seperator is not None else ['<b>', '</b>']
 
     languages = pd.Series([1] * df.Language.describe()['unique'], index=df.Language.unique())
     
