@@ -39,7 +39,7 @@ def main():
             raise ValueError('Can not open a valid GeoLite2 Country model. Make sure you have specified the correct filename.')
     else:
         try:            
-            df = pd.read_csv(args.users, sep=',', encoding='utf-8') 
+            df = pd.read_csv(args.users, sep=';', encoding='utf-8') 
         except:
             raise ValueError('Can not open the specified user dataset. Make sure you have specified the correct filename.')
     
