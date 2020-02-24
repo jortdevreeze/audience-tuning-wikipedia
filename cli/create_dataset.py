@@ -9,6 +9,8 @@ import sqlite3
 import argparse
 import pandas as pd
 
+from datetime import datetime, timedelta
+from dateutil.parser import parse
 from babel import languages
 
 def getJaccardSimilarity(str1, str2): 
@@ -109,12 +111,15 @@ def main():
     parser.add_argument('--input', metavar='input', type=str, required=True, help='Opens a csv file from the specified path.')
     parser.add_argument('--output', metavar='output', type=str, required=True, help='Stores the extracted data to the specified path.')
     parser.add_argument('--google', action='store_true', help='Specify if a cell with Google translate should be created.')
+    parser.add_argument('--date', metavar='date', type=str, default=None, help='The last date to include in the dataset (default None). The specified date should be in the "Y-m-d" format.')
 
     args = parser.parse_args()
        
     # Open the sqlite database
     db = sqlite3.connect(args.input)    
     cursor = db.cursor()
+
+    date = datetime.now() if args.date is None else parse(args.date) + timedelta(hours=23, minutes=59, seconds=59) 
     
     # Validate the database
     for table in ['articles', 'revisions', 'edits', 'authors']:
@@ -133,6 +138,7 @@ def main():
             articles.title AS title,
             articles.language AS language,
             revisions.id AS identifier,
+            revisions.timestamp AS timestamp,
             edits.id AS edit,
             edits.updated_text AS updated,
             edits.previous_text AS previous,
@@ -144,11 +150,28 @@ def main():
         INNER JOIN edits ON edits.revision_id = revisions.id
         WHERE articles.flag = 1
             AND edits.flag = 1
+            AND revisions.timestamp <= ?
         ORDER BY author
-    ''')
+    ''', (date,))
     
     df = pd.DataFrame(cursor.fetchall())
-    df.columns = ['Author', 'Tongue', 'Nationality', 'ISO', 'ParentID', 'Series', 'Title', 'Language', 'RevisionId', 'EditId', 'UpdatedText', 'PreviousText', 'Size']
+    
+    df.columns = [
+        'Author', 
+        'Tongue', 
+        'Nationality', 
+        'ISO', 
+        'ParentID', 
+        'Series', 
+        'Title', 
+        'Language', 
+        'RevisionId',
+        'Timestamp',
+        'EditId', 
+        'UpdatedText', 
+        'PreviousText', 
+        'Size'
+    ]
 
     # Add two new columns to the dataframe for the edits
     df['ParentTitle'] = df['Type'] = df['CurrentEdit'] = df['PreviousEdit'] = df['Similarity'] = None
