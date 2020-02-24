@@ -259,9 +259,9 @@ def main():
         for index, row in excluded.iterrows():
             if row['Language'] is not 'sco':
                 if row['CurrentEdit'] is not None:
-                    excluded.at[index, 'Translate 1'] = '=GOOGLETRANSLATE(P{}, "{}", "en")'.format(i, row['Language'])
+                    excluded.at[index, 'Translate 1'] = '=GOOGLETRANSLATE(Q{}, "{}", "en")'.format(i, row['Language'])
                 if row['PreviousEdit'] is not None:
-                    excluded.at[index, 'Translate 2'] = '=GOOGLETRANSLATE(Q{}, "{}", "en")'.format(i, row['Language'])
+                    excluded.at[index, 'Translate 2'] = '=GOOGLETRANSLATE(R{}, "{}", "en")'.format(i, row['Language'])
             i += 1
     
     if args.output.split('.')[-1] == 'xlsx':
