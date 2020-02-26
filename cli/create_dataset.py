@@ -38,17 +38,12 @@ def create_context(edit, text, length = 500, seperator = ['<b>', '</b>'], overla
         A string with the context or None if there is no match.
 
     """
-
-    edit = edit.encode('utf8')
-    text = text.encode('utf8')
-    
     split = text.rpartition(edit)
         
     # If there is no exact match between the edit and the text, try to find a closest match as possible
     if not split[1]:
         
-        prefix = suffix = None
-        
+        prefix = suffix = ''        
         edit_length = len(edit)
 
         for i in range(100, (100 - overlap), -1):            
@@ -60,8 +55,8 @@ def create_context(edit, text, length = 500, seperator = ['<b>', '</b>'], overla
 
             # We have a match
             if index is not -1:
-                split = text.rpartition(edit[:charlen])                
-                prefix = split[0].decode('utf8')[-length:]
+                split = text.rpartition(edit[:charlen])             
+                prefix = split[0][-length:]
                 break
         
         for i in range(0, overlap, 1):            
@@ -74,21 +69,16 @@ def create_context(edit, text, length = 500, seperator = ['<b>', '</b>'], overla
             # We have a match
             if index is not -1:
                 split = text.rpartition(edit[charlen:])                
-                suffix = split[2].decode('utf8')[:length]
-                break
-        
-        middle = edit.decode('utf8')
-        
-        if not prefix or not suffix:
+                suffix = split[2][:length]
+                break       
+
+        if len(prefix) is 0 and len(suffix) is 0:
             return ''
     
     # We have a 100% match
     else:
-        
-        prefix = split[0].decode('utf8')[-length:]
-        middle = split[1].decode('utf8')
-        suffix = split[2].decode('utf8')[:length]
-    
+        prefix = split[0][-length:]
+        suffix = split[2][:length]
     
     # Remove the first and last word from the predefined character length of context
     prefix = ' '.join(prefix.split(' ')[1:])
@@ -98,9 +88,9 @@ def create_context(edit, text, length = 500, seperator = ['<b>', '</b>'], overla
     if len(prefix) is not 0:
         prefix = ''.join(['...', prefix])
     if len(suffix) is not 0:
-        suffix = ''.join([suffix, '...'])
+        suffix = ''.join([suffix, '...'])       
     
-    context = ''.join([prefix, ''.join([seperator[0], middle, seperator[1]]), suffix])
+    context = ''.join([prefix, ''.join([seperator[0], edit, seperator[1]]), suffix])
 
     return context
 
@@ -206,7 +196,7 @@ def main():
                 edit_type = 2         
             if len(row['UpdatedText']) is 0 and len(row['PreviousText']) is not 0:
                 edit_type = 3    
-                
+
             # Content is added (Create)
             if edit_type is 1:            
                 revision = cursor.execute('''SELECT content FROM revisions WHERE id = ?''', (row['RevisionId'],)).fetchone()[0]
@@ -214,11 +204,16 @@ def main():
                 df.at[index, 'Similarity'] = 0
 
             # Content is revised (Update)    
-            if edit_type is 2:            
+            if edit_type is 2:     
                 revision = cursor.execute('''SELECT content, previous FROM revisions WHERE id = ?''', (row['RevisionId'],)).fetchone()
-                df.at[index, 'CurrentEdit'] = create_context(row['UpdatedText'], revision[0])
-                df.at[index, 'PreviousEdit'] = create_context(row['PreviousText'], revision[1])
-                df.at[index, 'Similarity'] = getJaccardSimilarity(df.at[index, 'CurrentEdit'], df.at[index, 'PreviousEdit'])
+                current_edit = create_context(row['UpdatedText'], revision[0])
+                previous_edit = create_context(row['PreviousText'], revision[1])
+                if len(current_edit) == 0 or len(previous_edit) == 0:
+                    continue
+                else:
+                    df.at[index, 'CurrentEdit'] = current_edit
+                    df.at[index, 'PreviousEdit'] = previous_edit
+                    df.at[index, 'Similarity'] = getJaccardSimilarity(df.at[index, 'CurrentEdit'], df.at[index, 'PreviousEdit'])
 
             # Content is removed (Delete)  
             if edit_type is 3:
