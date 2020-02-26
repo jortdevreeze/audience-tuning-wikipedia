@@ -204,16 +204,11 @@ def main():
                 df.at[index, 'Similarity'] = 0
 
             # Content is revised (Update)    
-            if edit_type is 2:     
+            if edit_type is 2:            
                 revision = cursor.execute('''SELECT content, previous FROM revisions WHERE id = ?''', (row['RevisionId'],)).fetchone()
-                current_edit = create_context(row['UpdatedText'], revision[0])
-                previous_edit = create_context(row['PreviousText'], revision[1])
-                if len(current_edit) == 0 or len(previous_edit) == 0:
-                    continue
-                else:
-                    df.at[index, 'CurrentEdit'] = current_edit
-                    df.at[index, 'PreviousEdit'] = previous_edit
-                    df.at[index, 'Similarity'] = getJaccardSimilarity(df.at[index, 'CurrentEdit'], df.at[index, 'PreviousEdit'])
+                df.at[index, 'CurrentEdit'] = create_context(row['UpdatedText'], revision[0])
+                df.at[index, 'PreviousEdit'] = create_context(row['PreviousText'], revision[1])
+                df.at[index, 'Similarity'] = getJaccardSimilarity(df.at[index, 'CurrentEdit'], df.at[index, 'PreviousEdit'])
 
             # Content is removed (Delete)  
             if edit_type is 3:
