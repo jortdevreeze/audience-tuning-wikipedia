@@ -273,10 +273,10 @@ class Extract:
         # Output the total amount of edits for this language version
         print('%sExtracted %d revisions(s) for language code \'%s\':' % (' ' * indent, len(identifiers), lang))
         
-        for i, identifier in enumerate(identifiers):
+        for i, identifier in enumerate(identifiers, 1):
             
             # Output the revision
-            print('%sRevision %d of %d: %s' % (' ' * (indent + 2), (i + 1), len(identifiers), identifier))
+            print('%sRevision %d of %d: %s' % (' ' * (indent + 2), i, len(identifiers), identifier))
             
             # Check whether the revision has already been saved in the DB
             cursor.execute('''SELECT * FROM revisions WHERE revision_id=?''', (identifier,))
@@ -487,10 +487,10 @@ def main():
             # Output the total amount of users
             print('  Extracted %d %s user(s):' % (len(users), args.usertype))
             
-            for i, user in enumerate(users):
+            for i, user in enumerate(users, 1):
                 
                 # Output the current user which is being processed
-                print('    User %d of %d: %s' % ((i + 1), len(users), user))
+                print('    User %d of %d: %s' % (i, len(users), user))
                 
                 extract.extract_edits(user, row.lang1, 6)
                 extract.extract_edits(user, row.lang2, 6)  
@@ -500,4 +500,3 @@ def main():
 
 if __name__ == "__main__": 
    main() 
- 
