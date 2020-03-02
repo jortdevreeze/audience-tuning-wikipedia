@@ -128,6 +128,7 @@ def main():
             articles.title AS title,
             articles.language AS language,
             revisions.id AS identifier,
+            revisions.revision_id AS revision_id,
             revisions.timestamp AS timestamp,
             edits.id AS edit,
             edits.updated_text AS updated,
@@ -155,6 +156,7 @@ def main():
         'Series', 
         'Title', 
         'Language', 
+        'Identifier',
         'RevisionId',
         'Timestamp',
         'EditId', 
@@ -162,7 +164,7 @@ def main():
         'PreviousText', 
         'Size'
     ]
-
+    
     # Add two new columns to the dataframe for the edits
     df['ParentTitle'] = df['Type'] = df['CurrentEdit'] = df['PreviousEdit'] = df['Similarity'] = None
     
@@ -199,55 +201,61 @@ def main():
 
             # Content is added (Create)
             if edit_type is 1:            
-                revision = cursor.execute('''SELECT content FROM revisions WHERE id = ?''', (row['RevisionId'],)).fetchone()[0]
+                revision = cursor.execute('''SELECT content FROM revisions WHERE id = ?''', (row['Identifier'],)).fetchone()[0]
                 df.at[index, 'CurrentEdit'] = create_context(row['UpdatedText'], revision)
                 df.at[index, 'Similarity'] = 0
 
             # Content is revised (Update)    
             if edit_type is 2:            
-                revision = cursor.execute('''SELECT content, previous FROM revisions WHERE id = ?''', (row['RevisionId'],)).fetchone()
-                df.at[index, 'CurrentEdit'] = create_context(row['UpdatedText'], revision[0])
-                df.at[index, 'PreviousEdit'] = create_context(row['PreviousText'], revision[1])
-                df.at[index, 'Similarity'] = getJaccardSimilarity(df.at[index, 'CurrentEdit'], df.at[index, 'PreviousEdit'])
+                revision = cursor.execute('''SELECT content, previous FROM revisions WHERE id = ?''', (row['Identifier'],)).fetchone()
+                current_edit = create_context(row['UpdatedText'], revision[0])
+                previous_edit = create_context(row['PreviousText'], revision[1])
+                if len(current_edit) == 0 or len(previous_edit) == 0:
+                    continue
+                else:
+                    df.at[index, 'CurrentEdit'] = current_edit
+                    df.at[index, 'PreviousEdit'] = previous_edit
+                    df.at[index, 'Similarity'] = getJaccardSimilarity(df.at[index, 'CurrentEdit'], df.at[index, 'PreviousEdit'])
 
             # Content is removed (Delete)  
             if edit_type is 3:
-                revision = cursor.execute('''SELECT previous FROM revisions WHERE id = ?''', (row['RevisionId'],)).fetchone()[0]
+                revision = cursor.execute('''SELECT previous FROM revisions WHERE id = ?''', (row['Identifier'],)).fetchone()[0]
                 df.at[index, 'PreviousEdit'] = create_context(row['PreviousText'], revision) 
                 df.at[index, 'Similarity'] = 0
             
             df.at[index, 'Type'] = edit_type  
-            
+
+    df = df.drop('Identifier', 1)
+
     # Select only meaningfull edits
     selection = df[(df.CurrentEdit.notnull()) | (df.PreviousEdit.notnull())]
     selection = selection[(selection.Size > 2) & (selection.Similarity < 1)]
-    
+
     # Select only edits that are made on both language versions
     exclude = []
-    
+
     # Iterate through all conflicts
     for i in selection.Series.unique():
         conflict = selection[(selection.Series == i)]
-        
+
         # Iterate through all authors within the current conflict
         for j in conflict.Author.unique():
             author = conflict[(conflict.Author == j)]
-            
+
             # Select only the authors within this conflict that edited two language versions
             if len(author.Language.unique()) is not 2:
                 for k in author.EditId:
                     exclude.append(k)
                 
-
     # List of all edits in two languages made by one author
     excluded = selection.loc[~selection['EditId'].isin(exclude)]
     excluded = excluded[excluded.CurrentEdit.notna()]
-    
+
     # Add a Google translate column
     if args.google is True:
         i = 2    
         for index, row in excluded.iterrows():
-            if row['Language'] is not 'sco':
+            if row['Language'] not in ['en', 'sco']:
                 if row['CurrentEdit'] is not None:
                     excluded.at[index, 'Translate 1'] = '=GOOGLETRANSLATE(Q{}, "{}", "en")'.format(i, row['Language'])
                 if row['PreviousEdit'] is not None:
