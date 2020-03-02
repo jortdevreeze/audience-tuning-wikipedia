@@ -31,7 +31,8 @@ class Extract:
     _item = None
     _parent = None
     
-    _sleep = 0    
+    _sleep = 0
+    _log = []
     
     _usertype = 'registered'
     
