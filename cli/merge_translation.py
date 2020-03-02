@@ -41,6 +41,7 @@ def main():
     parser.add_argument('--pattern', metavar='pattern', type=str, default=False, help='Override the regex pattern that removes the edit id from all column names (default: "{}\w\D+{}").')
     parser.add_argument('--metadata', metavar='metadata', type=str, nargs='*', default=False, help='Override which columns contain metadata (default: ["ResponseId", "language", "english", "id"]).')
     parser.add_argument('--divider', metavar='divider', type=int, nargs=2, default=False, help='Override how to split up the columns in the dataset (default: [7,19]).')
+    parser.add_argument('--identifier', metavar='identifier', type=str, default=False, help='Override the identifier that is used to merge both datasets (default: "EditId").')
 
     args = parser.parse_args()
 
@@ -52,8 +53,9 @@ def main():
         'id'
     ]
 
-    pattern = r'{}\w\D+{}$'
+    pattern = r'{}\w\D+{}$' #  r'{}\w+{}$' was initially there －‸ლ
     divider = [7,19]
+    identifier = 'EditId'
 
     try:
         df = pd.read_csv(args.input, sep=';', encoding='utf-8')
@@ -74,11 +76,14 @@ def main():
 
     if args.divider is not False:
         divider = args.divider
+    
+    if args.identifier is not False:
+        identifier = args.identifier
 
     # Iterate through all edits
     for index, row in tqdm(df.iterrows()):
 
-        selector = pattern.format(args.regex, str(row.EditId))
+        selector = pattern.format(args.regex, str(row[identifier]))
         data = iterateThroughData(args.path, selector)
         
         if data is not False and data.shape[1] > 0:
@@ -90,7 +95,7 @@ def main():
             edit = data.iloc[:,i:n].dropna()
             meta = meta.loc[edit.index,:]
             
-            if len(edit.columns) > divider[0] and str(row.EditId) not in edit.columns[-1]:
+            if len(edit.columns) > divider[0] and str(row[identifier]) not in edit.columns[-1]:
                 error = True
                 edit = edit.iloc[:,0:divider[0]].copy()
             
@@ -100,7 +105,7 @@ def main():
             for idx, name in enumerate(edit.columns):
                 regex = re.findall('\d+', name)
                 prefix = '_' if '_' in name else ''            
-                replace = re.sub(prefix + str(row.EditId), '', name)           
+                replace = re.sub(prefix + str(row[identifier]), '', name)           
                 if len(regex) > 1:
                     if regex[0] == regex[1]:
                         replace = re.sub('_\d_', '_', name)               
@@ -109,7 +114,7 @@ def main():
             edit = pd.concat([meta, edit], axis=1)
             
             # Insert additional data
-            edit.insert(0, 'EditId', row.EditId)
+            edit.insert(0, identifier, row[identifier])
             edit.insert(1, 'Count', count)
             
             # Create column in dataset
@@ -123,7 +128,7 @@ def main():
 
     # Merge the datasets
     if edits is not False:        
-        df_merged = pd.merge(df, edits, on='EditId', how='outer')
+        df_merged = pd.merge(df, edits, on=identifier, how='outer')
         df_merged.to_csv(args.output, sep=';', encoding='utf-8', index=False)
 
 if __name__ == "__main__": 
