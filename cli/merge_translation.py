@@ -45,6 +45,7 @@ def main():
 
     args = parser.parse_args()
 
+    # Default columns to extract
     metadata = [
         'ResponseId',
         'language',
@@ -53,6 +54,7 @@ def main():
         'id'
     ]
 
+    # Default arguments required to merge the translations
     pattern = r'{}\w\D+{}$' #  r'{}\w+{}$' was initially there －‸ლ
     divider = [7,19]
     identifier = 'EditId'
@@ -83,7 +85,13 @@ def main():
     # Iterate through all edits
     for index, row in tqdm(df.iterrows()):
 
-        selector = pattern.format(args.regex, str(row[identifier]))
+        # Skip row if there's no edit identifier
+        if pd.isnull(row[identifier]):
+            continue
+        
+        id = str(int(row[identifier]))
+
+        selector = pattern.format(args.regex, id)
         data = iterateThroughData(args.path, selector)
         
         if data is not False and data.shape[1] > 0:
@@ -95,7 +103,7 @@ def main():
             edit = data.iloc[:,i:n].dropna()
             meta = meta.loc[edit.index,:]
             
-            if len(edit.columns) > divider[0] and str(row[identifier]) not in edit.columns[-1]:
+            if len(edit.columns) > divider[0] and id not in edit.columns[-1]:
                 error = True
                 edit = edit.iloc[:,0:divider[0]].copy()
             
@@ -105,7 +113,7 @@ def main():
             for idx, name in enumerate(edit.columns):
                 regex = re.findall('\d+', name)
                 prefix = '_' if '_' in name else ''            
-                replace = re.sub(prefix + str(row[identifier]), '', name)           
+                replace = re.sub(prefix + id, '', name)           
                 if len(regex) > 1:
                     if regex[0] == regex[1]:
                         replace = re.sub('_\d_', '_', name)               
@@ -114,7 +122,7 @@ def main():
             edit = pd.concat([meta, edit], axis=1)
             
             # Insert additional data
-            edit.insert(0, identifier, row[identifier])
+            edit.insert(0, identifier, int(id))
             edit.insert(1, 'Count', count)
             
             # Create column in dataset
@@ -122,14 +130,14 @@ def main():
                 edits = edit
             else:
                 edits = pd.concat([edits, edit], sort=False)
-            
-
-    print('%s: Saving the merged dataset...' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S')))
 
     # Merge the datasets
-    if edits is not False:        
+    if edits is not False:
+        print('%s: Saving the merged dataset.' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S')))     
         df_merged = pd.merge(df, edits, on=identifier, how='outer')
         df_merged.to_csv(args.output, sep=';', encoding='utf-8', index=False)
+    else:
+        print('%s: There are no translations available for this dataset.' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S')))
 
 if __name__ == "__main__": 
    main() 
