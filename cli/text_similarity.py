@@ -10,6 +10,7 @@ import gensim
 import re
 import os.path
 import argparse
+import warnings
 
 import pandas as pd
 
@@ -26,68 +27,71 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+
 class Similarity:
     
     _stopwords = []
     
-    def __init__(self, language=None, stopwords=None):
-        if stopwords is not None:
-            try:
-                with open(stopwords, encoding='utf-8') as file:
-                    stopwords = json.load(file)
-                    if language in stopwords.keys():
-                        self._stopwords = stopwords[language]
-            except:
-                raise ValueError('Can not load the specified stopwords dictionary. You must provide a valid json dictionary.')
+    def __init__(self, language, stopwords):
+        if stopwords is not None and language in stopwords.keys():
+            self._stopwords = stopwords[language]
      
-    def getJaccardSimilarity(self, str1, str2): 
+    def jaccard_similarity(self, str1, str2): 
         a = set(str1.split()) 
         b = set(str2.split())
         c = a.intersection(b)
         return float(len(c)) / (len(a) + len(b) - len(c))
     
-    def getVectors(self, *strs):
+    def vectorize(self, *strs):
         text = [t for t in strs]
         vectorizer = CountVectorizer(text)
         vectorizer.fit(text)
         return vectorizer.transform(text).toarray()
     
-    def getTfidfVectors(self, *strs):
+    def tfidf_vectors(self, *strs):
         text = [t for t in strs]
         vectorizer = TfidfVectorizer(text)
         vectorizer.fit(text)
         return vectorizer.transform(text).toarray()
     
-    def tokenizeAndFilter(self, string): 
+    def tokenize_and_filter(self, string): 
         words = word_tokenize(string)        
         words = [w for w in words if w.isalpha()]
         words = [w for w in words if not w in self._stopwords]
         return words
     
-    def getCosine(self, *strs, method='tfidf'):
+    def cosine(self, *strs, method='tfidf'):
         if method is 'tfidf':
-            vectors = [t for t in self.getTfidfVectors(' '.join(strs[0]), ' '.join(strs[1]))] 
+            vectors = [t for t in self.tfidf_vectors(' '.join(strs[0]), ' '.join(strs[1]))] 
         else:
-            vectors = [t for t in self.getVectors(' '.join(strs[0]), ' '.join(strs[1]))]
+            vectors = [t for t in self.vectorize(' '.join(strs[0]), ' '.join(strs[1]))]
         return cosine_similarity(vectors)[0,1]
     
-    def getSoftCosine(self, *strs, model):
+    def soft_cosine(self, *strs, model):
         dictionary =  corpora.Dictionary([strs[0], strs[1]])
         s_matrix = model.similarity_matrix(dictionary, tfidf=None, threshold=0.0, exponent=2.0, nonzero_limit=100) # Default paramaters (see https://radimrehurek.com/gensim/models/keyedvectors.html)
         return softcossim(dictionary.doc2bow(strs[0]), dictionary.doc2bow(strs[1]), s_matrix)
     
-    def getWordEmbeddings(self, words, model):
+    def word_embeddings(self, words, model):
         vocab = model.vocab 
         return [w for w in words if w in vocab]
     
-    def getEmbeddingsSimilarity(self, *strs, model):
-        s1words = self.getWordEmbeddings(strs[0], model)
-        s2words = self.getWordEmbeddings(strs[1], model)    
+    def embeddings_similarity(self, *strs, model):
+        s1words = self.word_embeddings(strs[0], model)
+        s2words = self.word_embeddings(strs[1], model)    
         if not s1words or not s2words:
             return None
         return model.n_similarity(s1words, s2words)
+    
+    def embeddings_distance(self, *strs, model):
+        s1words = self.word_embeddings(strs[0], model)
+        s2words = self.word_embeddings(strs[1], model)    
+        if not s1words or not s2words:
+            return None
+        return model.wmdistance(s1words, s2words)
 
-def processDocument(doc): 
+
+def process_document(doc): 
     if type(doc) is str:
         if '#VALUE' in doc:
             return None
@@ -95,7 +99,7 @@ def processDocument(doc):
     else:
         return None
     
-def saveOutput(df, name): 
+def save_output(df, name): 
     if df is not False:             
         try:
             df.to_csv(name, sep=';', encoding='utf-8', index=False)
@@ -117,7 +121,7 @@ def main():
     
     parser.add_argument('--input', metavar='input', type=str, required=True, help='Opens a csv file from the specified path.')
     parser.add_argument('--output', metavar='output', type=str, required=True, help='Stores the similarity data to the specified path.')
-    parser.add_argument('--strict', action='store_true', help='Specify if similarities should only be caluculted when there are 2-combinations for both nationalities.')
+    parser.add_argument('--strict', action='store_true', help='Specify if similarities should only be calculated when there are 2-combinations for both nationalities.')
     parser.add_argument('--metrics', metavar='metrics', nargs='*', type=str, default=False, help='Specify which metrics should be used (tf, tfidf, soft_cosine, embeddings).')
     parser.add_argument('--blacklist', metavar='blacklist', nargs='*', type=str, default=False, help='A list with languages to exclude from the input data.')
     parser.add_argument('--whitelist', metavar='whitelist', nargs='*', type=str, default=False, help='A list with languages to include from the input data. Note that this overrides a blacklist.')
@@ -143,6 +147,13 @@ def main():
     
     output = False
 
+    # Open the stopwords dictionary
+    try:
+        with open('../data/stopwords-iso.json', encoding='utf-8') as file:
+            stopwords = json.load(file)
+    except:
+        raise ValueError('Can not load the specified stopwords dictionary. You must provide a valid json dictionary.')
+
     # Check which metrics to use
     if args.metrics is not False:
         idx = [metrics.index(x) for x in set(args.metrics).intersection(metrics)]
@@ -151,15 +162,13 @@ def main():
     else:
         idx = list(range(4))
 
-    if args.resume is not False:
-        
+    # Open a previously saved output file and continue calculation
+    if args.resume is not False:        
         if os.path.isfile(args.output):
             output = pd.read_csv(args.output, sep=';', encoding='utf-8')
         else:
-            raise ValueError('Unable to resume the process, because the specified output dataset does not exists.')
-        
-        index = df[df.Language == args.resume].index.tolist()
-        
+            raise ValueError('Unable to resume the process, because the specified output dataset does not exists.')        
+        index = df[df.Language == args.resume].index.tolist()        
         if index:
             df = df[df.index >= index[0]]
     
@@ -193,17 +202,20 @@ def main():
                 flag = True
 
         # Load the Fasttext model
-        if flag is True:   
-            model = gensim.models.fasttext.load_facebook_vectors('../models/cc.{}.300.bin.gz'.format(language))
-            print('%s: Finished loading the pre-trained word vectors' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S')))
-        
-        similarity = Similarity(language, '../data/stopwords-iso.json')  
+        if flag is True:
+            try:   
+                model = gensim.models.fasttext.load_facebook_vectors('../models/cc.{}.300.bin.gz'.format(language))
+                print('%s: Finished loading the pre-trained word vectors' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S')))
+            except:
+                raise ValueError('Can not load the pre-trained word vectors for language: "%s". You must provide a valid Fasttext model.' % (language))
+
+        similarity = Similarity(language, stopwords)  
         
         for article in subset.Series.unique():
 
             tongue = subset[(subset.Series == article)].Tongue.unique()
-            
-            if len(tongue) > 1:
+
+            if len(tongue) >= 1:
             
                 print('%sProcessing the article "%s"' % (' ' * 2, subset[(subset.Series == article)].ParentTitle.iloc[0]))
                 print('%sCalculating within similarities:' % (' ' * 4))
@@ -215,7 +227,7 @@ def main():
                     edits = subset[(subset.Series == article) & (subset.Tongue == t)]
                     edits = edits[['CurrentEdit', 'EditId']]
         
-                    edits['CurrentEdit'] = edits['CurrentEdit'].apply(processDocument)
+                    edits['CurrentEdit'] = edits['CurrentEdit'].apply(process_document)
                     edits = edits.dropna()
                     
                     pairs = list(combinations(edits['CurrentEdit'], 2))
@@ -228,13 +240,13 @@ def main():
                         
                         for pair in tqdm(pairs):
                             
-                            w1 = similarity.tokenizeAndFilter(pair[0])
-                            w2 = similarity.tokenizeAndFilter(pair[1])
+                            w1 = similarity.tokenize_and_filter(pair[0])
+                            w2 = similarity.tokenize_and_filter(pair[1])
 
-                            if 0 in idx: a.append(similarity.getCosine(w1, w2, method='tf'))
-                            if 1 in idx: b.append(similarity.getCosine(w1, w2, method='tfidf'))
-                            if 2 in idx: c.append(similarity.getSoftCosine(w1, w2, model=model))
-                            if 3 in idx: d.append(similarity.getEmbeddingsSimilarity(w1, w2, model=model))
+                            if 0 in idx: a.append(similarity.cosine(w1, w2, method='tf'))
+                            if 1 in idx: b.append(similarity.cosine(w1, w2, method='tfidf'))
+                            if 2 in idx: c.append(similarity.soft_cosine(w1, w2, model=model))
+                            if 3 in idx: d.append(similarity.embeddings_similarity(w1, w2, model=model))
                         
                         row = {'article' : [article], 'language' : [language], 'tongue' : [t], 'factor' : 0, 'tf' : [a], 'tfidf' : [b], 'soft_cosine' : [c], 'embeddings' : [d]}
                         
@@ -243,52 +255,57 @@ def main():
                         else:
                             output = output.append(pd.DataFrame(row), ignore_index=True)
                     
-    
-                print('%sCalculating between similarities:' % (' ' * 4))
-                
-                print('%s%s-%s' % (' ' * 6, tongue[0], tongue[1]))
-                
-                left = subset[(subset.Series == article) & (subset.Tongue == t)]
-                left = left[['CurrentEdit', 'EditId']]
-    
-                left['CurrentEdit'] = left['CurrentEdit'].apply(processDocument)
-                left = left.dropna()   
-                
-                right = subset[(subset.Series == article) & (subset.Tongue != t)]
-                right = right[['CurrentEdit', 'EditId']]
-    
-                right['CurrentEdit'] = right['CurrentEdit'].apply(processDocument)
-                right = right.dropna()
-    
-                pairs = list(product(left['CurrentEdit'], right['CurrentEdit']))
-                
-                print('%sThe Cartesian product between both sets are equal to %d.' % (' ' * 8, len(pairs)))
-                
-                if len(pairs) > 0:
-                
-                    a, b, c, d = [], [], [], []
+                if len(tongue) == 2:
 
-                    for pair in tqdm(pairs):
+                    print('%sCalculating between similarities:' % (' ' * 4))
+                    
+                    print('%s%s-%s' % (' ' * 6, tongue[0], tongue[1]))
+                    
+                    left = subset[(subset.Series == article) & (subset.Tongue == t)]
+                    left = left[['CurrentEdit', 'EditId']]
+        
+                    left['CurrentEdit'] = left['CurrentEdit'].apply(process_document)
+                    left = left.dropna()   
+                    
+                    right = subset[(subset.Series == article) & (subset.Tongue != t)]
+                    right = right[['CurrentEdit', 'EditId']]
+        
+                    right['CurrentEdit'] = right['CurrentEdit'].apply(process_document)
+                    right = right.dropna()
+        
+                    pairs = list(product(left['CurrentEdit'], right['CurrentEdit']))
+                    
+                    print('%sThe Cartesian product between both sets are equal to %d.' % (' ' * 8, len(pairs)))
+                    
+                    if len(pairs) > 0:
+                    
+                        a, b, c, d = [], [], [], []
+
+                        for pair in tqdm(pairs):
+                    
+                            w1 = similarity.tokenize_and_filter(pair[0])
+                            w2 = similarity.tokenize_and_filter(pair[1])
+                            
+                            if 0 in idx: a.append(similarity.cosine(w1, w2, method='tf'))
+                            if 1 in idx: b.append(similarity.cosine(w1, w2, method='tfidf'))
+                            if 2 in idx: c.append(similarity.soft_cosine(w1, w2, model=model))
+                            if 3 in idx: d.append(similarity.embeddings_similarity(w1, w2, model=model))
+
+                        row = {'article' : [article], 'language' : [language], 'tongue' : [t], 'factor' : 1, 'tf' : [a], 'tfidf' : [b], 'soft_cosine' : [c], 'embeddings' : [d]}
+
+                        if output is False:
+                            output = pd.DataFrame(row)
+                        else:
+                            output = output.append(pd.DataFrame(row), ignore_index=True)
+
+                else:
+                    print('%sCan not calculate between similarities. Only one tongue available.' % (' ' * 4))
+
                 
-                        w1 = similarity.tokenizeAndFilter(pair[0])
-                        w2 = similarity.tokenizeAndFilter(pair[1])
-                        
-                        if 0 in idx: a.append(similarity.getCosine(w1, w2, method='tf'))
-                        if 1 in idx: b.append(similarity.getCosine(w1, w2, method='tfidf'))
-                        if 2 in idx: c.append(similarity.getSoftCosine(w1, w2, model=model))
-                        if 3 in idx: d.append(similarity.getEmbeddingsSimilarity(w1, w2, model=model))
-
-                    row = {'article' : [article], 'language' : [language], 'tongue' : [t], 'factor' : 1, 'tf' : [a], 'tfidf' : [b], 'soft_cosine' : [c], 'embeddings' : [d]}
-
-                    if output is False:
-                        output = pd.DataFrame(row)
-                    else:
-                        output = output.append(pd.DataFrame(row), ignore_index=True)
-            
         # Autosave after each language
         if output is not False:
             print('%s: Saving the results for language "%s"' % (datetime.strftime(datetime.now(), '%Y-%m-%d | %H:%M:%S'), language))
-            saveOutput(output, args.output)
+            save_output(output, args.output)
 
 if __name__ == "__main__": 
     main()
