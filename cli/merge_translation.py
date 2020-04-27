@@ -55,7 +55,7 @@ def main():
     ]
 
     # Default arguments required to merge the translations
-    pattern = r'{}\w\D+{}$' #  r'{}\w+{}$' was initially there －‸ლ
+    pattern = r'{}\w\D+{}$'
     divider = [7,19]
     identifier = 'EditId'
 
