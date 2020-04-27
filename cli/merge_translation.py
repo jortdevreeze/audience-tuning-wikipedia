@@ -15,7 +15,7 @@ import numpy as np
 from tqdm import tqdm
 from datetime import datetime
 
-def iterateThroughData(path, selector):    
+def iterate_through_data(path, selector):    
     for filename in os.listdir(path):        
         if filename.endswith('.csv'):            
             try:
@@ -92,7 +92,7 @@ def main():
         id = str(int(row[identifier]))
 
         selector = pattern.format(args.regex, id)
-        data = iterateThroughData(args.path, selector)
+        data = iterate_through_data(args.path, selector)
         
         if data is not False and data.shape[1] > 0:
         
